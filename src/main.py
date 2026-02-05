@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
 from x402_tron.logging_config import setup_logging
-from x402_tron.mechanisms.facilitator import UptoTronFacilitatorMechanism
+from x402_tron.mechanisms.facilitator import ExactTronFacilitatorMechanism
 from x402_tron.signers.facilitator import TronFacilitatorSigner
 from x402_tron.facilitator.x402_facilitator import X402Facilitator
 from x402_tron.types import (
@@ -74,7 +74,7 @@ for network in networks:
         network=network,
     )
     facilitator_address = facilitator_signer.get_address()
-    facilitator_mechanism = UptoTronFacilitatorMechanism(
+    facilitator_mechanism = ExactTronFacilitatorMechanism(
         facilitator_signer,
         fee_to=config.FEE_TO_ADDRESS,
         base_fee=config.BASE_FEE,
@@ -84,7 +84,7 @@ for network in networks:
 @app.get("/supported")
 async def supported():
     """Get supported capabilities"""
-    return x402_facilitator.supported()
+    return x402_facilitator.supported(config.FEE_TO_ADDRESS)
 
 @app.post("/fee/quote", response_model=FeeQuoteResponse)
 async def fee_quote(request: FeeQuoteRequest):
