@@ -27,7 +27,6 @@ from x402_tron.types import (
 from pydantic import BaseModel
 import config
 
-
 class VerifyRequest(BaseModel):
     """Verify request model"""
     paymentPayload: PaymentPayload
@@ -80,7 +79,7 @@ for network in networks:
         fee_to=config.FEE_TO_ADDRESS,
         base_fee=config.BASE_FEE,
     )
-    x402_facilitator.register(network, facilitator_mechanism)
+    x402_facilitator.register([network], facilitator_mechanism)
 
 @app.get("/supported")
 async def supported():
@@ -98,7 +97,6 @@ async def fee_quote(request: FeeQuoteRequest):
     Returns:
         Fee quote response with fee details
     """
-    print(f"{request}")
     return await x402_facilitator.fee_quote(request.accept)
 
 @app.post("/verify", response_model=VerifyResponse)
