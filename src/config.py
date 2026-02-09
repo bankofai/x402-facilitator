@@ -2,12 +2,15 @@
 Configuration module - loads settings from YAML file and 1Password
 """
 
+import logging
 import os
 from pathlib import Path
 from typing import Optional
 from urllib.parse import quote, urlparse, urlunparse
 
 import yaml
+
+logger = logging.getLogger(__name__)
 
 class Config:
     """Application configuration"""
@@ -53,6 +56,7 @@ class Config:
                  "Please ensure facilitator.config.yaml exists in the project root "
                  "or config/ directory, or set CONFIG_PATH environment variable."
              )
+        logger.info(f"Configuration file found at {config_path}")
         
         with open(config_path, "r") as f:
             self._config = yaml.safe_load(f) or {}
@@ -361,18 +365,14 @@ class Config:
 
     async def get_database_url(self) -> str:
         """
-        Get database connection URL, with password injected from 1Password when configured.
+        Get database connection URL, with password injected when available.
 
-        When onepassword.database_password_item is set, the password is fetched from 1Password
-        and injected into database.url (URL may be without password, e.g. postgresql+asyncpg://user@host:5432/db).
+        Password is fetched from database.password (config) or 1Password (when database_password_item is set),
+        then injected into database.url (URL may be without password, e.g. postgresql+asyncpg://user@host:5432/db).
         """
         raw_url = self._config.get("database", {}).get("url", "")
         if not raw_url:
             raise ValueError("database.url is required")
-
-        item = self.onepassword_database_password_item
-        if not item:
-            return raw_url
 
         password = await self.get_database_password()
         if not password:

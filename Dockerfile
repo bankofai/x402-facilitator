@@ -31,7 +31,7 @@ RUN mkdir -p logs && chmod 755 logs
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-EXPOSE 8001 6001
+EXPOSE 8001 9001
 
 # Default: run facilitator. Override CMD for custom entry.
 CMD ["python", "src/main.py"]
