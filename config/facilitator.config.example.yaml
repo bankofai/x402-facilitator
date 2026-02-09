@@ -35,7 +35,7 @@ rate_limit:
   anonymous: "1/minute"
 
 monitoring:
-  port: 8001  # Default to use same port as server if same
+  port: 6001
   endpoint: "/metrics"
 
 facilitator:
