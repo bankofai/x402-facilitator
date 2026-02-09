@@ -5,6 +5,14 @@ from datetime import datetime
 from unittest.mock import AsyncMock
 
 @pytest.mark.asyncio
+async def test_health(client):
+    """Test /health endpoint (no rate limit)"""
+    response = await client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+@pytest.mark.asyncio
 async def test_get_supported(client, mocker):
     """Test /supported endpoint"""
     # Mock x402_facilitator.supported

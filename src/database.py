@@ -63,6 +63,18 @@ async def init_database(database_url: str) -> None:
         await conn.run_sync(Base.metadata.create_all)
 
 
+async def dispose_database() -> None:
+    """
+    Close all connections and clear engine/session maker.
+    Call before dropping the database (e.g. in integration test teardown).
+    """
+    global _engine, _async_session_maker
+    if _engine is not None:
+        await _engine.dispose()
+        _engine = None
+    _async_session_maker = None
+
+
 def get_session() -> AsyncSession:
     """
     Get a new database session.

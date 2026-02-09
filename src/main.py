@@ -133,6 +133,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.get("/health")
+async def health():
+    """Health check for K8s / load balancer liveness probe. No rate limit."""
+    return {"status": "ok"}
+
+
 @app.get("/supported")
 async def supported(request: Request):
     """Get supported capabilities"""
