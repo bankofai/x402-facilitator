@@ -50,8 +50,9 @@ async def lifespan(app: FastAPI):
     setup_logging(config.logging_config)
     logger.info("Logging configured with file output")
     
-    # Initialize database
-    await init_database(config.database_url)
+    # Initialize database (URL may include password from 1Password)
+    database_url = await config.get_database_url()
+    await init_database(database_url)
     logger.info("Database initialized")
     
     # Start API key refresher task

@@ -5,6 +5,7 @@ Configuration module - loads settings from YAML file and 1Password
 import os
 from pathlib import Path
 from typing import Optional
+from urllib.parse import quote, urlparse, urlunparse
 
 import yaml
 
@@ -16,6 +17,7 @@ class Config:
         self._config: dict = {}
         self._private_key: Optional[str] = None
         self._trongrid_api_key: Optional[str] = None
+        self._database_password: Optional[str] = None
         self._loaded: bool = False
         
     def load_from_yaml(self, config_path: Optional[str] = None) -> None:
@@ -59,7 +61,8 @@ class Config:
         Raises ValueError to force service stop on missing critical config.
         """
         errors = []
-        if not self._config.get("database", {}).get("url"):
+        db = self._config.get("database", {})
+        if not db.get("url"):
             errors.append("database.url is required and must be non-empty")
         fac = self._config.get("facilitator", {})
         if not fac.get("fee_to_address"):
@@ -79,8 +82,8 @@ class Config:
                 # Using 1Password, ensure metadata is present
                 if not self._config.get("onepassword", {}).get("vault"):
                     errors.append("onepassword.vault is required when using 1Password")
-                if not self._config.get("onepassword", {}).get("item"):
-                    errors.append("onepassword.item is required when using 1Password")
+                if not self._config.get("onepassword", {}).get("privatekey_item"):
+                    errors.append("onepassword.privatekey_item is required when using 1Password")
         if errors:
             raise ValueError(
                 "Configuration validation failed. " + " ".join(errors)
@@ -88,8 +91,18 @@ class Config:
     
     @property
     def database_url(self) -> str:
-        """Get database connection URL"""
+        """Get database connection URL (may not contain password if using 1Password)"""
         return self._config.get("database", {}).get("url", "")
+
+    @property
+    def onepassword_database_item(self) -> str:
+        """Get 1Password item name for database password"""
+        return self._config.get("onepassword", {}).get("database_item", "")
+
+    @property
+    def onepassword_database_field(self) -> str:
+        """Get 1Password field name for database password"""
+        return self._config.get("onepassword", {}).get("database_field", "password")
     
     @property
     def onepassword_vault(self) -> str:
@@ -98,13 +111,13 @@ class Config:
     
     @property
     def onepassword_item(self) -> str:
-        """Get 1Password item name"""
-        return self._config.get("onepassword", {}).get("item", "")
+        """Get 1Password item name for private key"""
+        return self._config.get("onepassword", {}).get("privatekey_item", "")
     
     @property
     def onepassword_field(self) -> str:
         """Get 1Password field name for private key"""
-        return self._config.get("onepassword", {}).get("field", "private_key")
+        return self._config.get("onepassword", {}).get("privatekey_field", "private_key")
 
     @property
     def onepassword_trongrid_item(self) -> str:
@@ -285,6 +298,68 @@ class Config:
                 logging.getLogger(__name__).warning(f"Failed to load TronGrid API Key from 1Password: {e}")
         
         return None
+
+    async def get_database_password(self) -> Optional[str]:
+        """
+        Get database password.
+        Priority:
+        1. Cached value
+        2. Direct database.password in YAML (local dev)
+        3. 1Password retrieval (when onepassword.database_item is set)
+
+        Returns:
+            Password string, or None if not configured (URL may contain password or no auth)
+        """
+        if self._database_password is not None:
+            return self._database_password
+
+        # 1. Direct password in config (local dev)
+        direct = self._config.get("database", {}).get("password")
+        if direct is not None and direct != "":
+            self._database_password = str(direct)
+            return self._database_password
+
+        # 2. 1Password
+        item = self.onepassword_database_item
+        token = self.onepassword_token
+        if not item or not token or token in ("your-op-token", "your-service-account-token"):
+            return None
+
+        from onepassword_client import get_secret_from_1password
+        self._database_password = await get_secret_from_1password(
+            vault=self.onepassword_vault,
+            item=item,
+            field=self.onepassword_database_field,
+            token=token,
+        )
+        return self._database_password
+
+    async def get_database_url(self) -> str:
+        """
+        Get database connection URL, with password injected from 1Password when configured.
+
+        When onepassword.database_item is set, the password is fetched from 1Password
+        and injected into database.url (URL may be without password, e.g. postgresql+asyncpg://user@host:5432/db).
+        """
+        raw_url = self._config.get("database", {}).get("url", "")
+        if not raw_url:
+            raise ValueError("database.url is required")
+
+        item = self.onepassword_database_item
+        if not item:
+            return raw_url
+
+        password = await self.get_database_password()
+        if not password:
+            return raw_url
+
+        # Inject password into URL (password may contain special chars)
+        parsed = urlparse(raw_url)
+        username = parsed.username or ""
+        port = f":{parsed.port}" if parsed.port else ""
+        quoted = quote(password, safe="")
+        netloc = f"{username}:{quoted}@{parsed.hostname or ''}{port}"
+        return urlunparse(parsed._replace(netloc=netloc))
 
 
 # Global config instance
