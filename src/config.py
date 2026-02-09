@@ -135,9 +135,23 @@ class Config:
         return self._config.get("facilitator", {}).get("fee_to_address", "")
     
     @property
-    def base_fee(self) -> str:
-        """Get base fee amount"""
-        return self._config.get("facilitator", {}).get("base_fee", "0")
+    def base_fee(self) -> dict[str, int]:
+        """
+        Get base fee per token (symbol -> amount in smallest units).
+
+        YAML format:
+          base_fee:
+            USDT: 100          # 0.0001 USDT (6 decimals)
+            USDD: 100000000000000  # 0.0001 USDD (18 decimals)
+
+        Legacy: single string/number is treated as USDT fee for backward compat.
+        """
+        val = self._config.get("facilitator", {}).get("base_fee", {})
+        if isinstance(val, dict):
+            return {k: int(v) for k, v in val.items()}
+        if isinstance(val, (str, int)):
+            return {"USDT": int(val)}
+        return {}
     
     @property
     def networks(self) -> list[str]:

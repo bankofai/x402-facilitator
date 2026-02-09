@@ -18,7 +18,6 @@ from x402_tron.facilitator.x402_facilitator import X402Facilitator
 from x402_tron.types import (
     VerifyResponse,
     SettleResponse,
-    FeeQuoteResponse,
 )
 
 from sqlalchemy.exc import IntegrityError
@@ -134,22 +133,19 @@ app.add_middleware(
 )
 
 @app.get("/supported")
-@limiter.limit(get_dynamic_rate_limit, key_func=get_dynamic_key_func)
 async def supported(request: Request):
     """Get supported capabilities"""
     return x402_facilitator.supported(config.fee_to_address, pricing="flat")
 
-@app.post("/fee/quote", response_model=FeeQuoteResponse)
-@limiter.limit(get_dynamic_rate_limit, key_func=get_dynamic_key_func)
+@app.post("/fee/quote")
 async def fee_quote(request: Request, request_data: FeeQuoteRequest):
     """Get fee quote for payment requirements"""
     return await x402_facilitator.fee_quote(
-        request_data.accept, 
+        request_data.accepts,
         request_data.paymentPermitContext
     )
 
 @app.post("/verify", response_model=VerifyResponse)
-@limiter.limit(get_dynamic_rate_limit, key_func=get_dynamic_key_func)
 async def verify(request: Request, verify_request: VerifyRequest):
     """Verify payment payload"""
     try:
@@ -201,7 +197,6 @@ async def settle(request: Request, request_data: SettleRequest):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/payments/{payment_id}", response_model=PaymentRecordResponse)
-@limiter.limit(get_dynamic_rate_limit, key_func=get_dynamic_key_func)
 async def get_payment(request: Request, payment_id: str):
     """Get payment record by payment_id"""
     record = await get_payment_by_id(payment_id)

@@ -19,7 +19,7 @@ class SettleRequest(BaseModel):
 
 class FeeQuoteRequest(BaseModel):
     """Fee quote request model"""
-    accept: PaymentRequirements
+    accepts: list[PaymentRequirements]
     paymentPermitContext: dict | None = None
 
 
