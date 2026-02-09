@@ -27,10 +27,6 @@ COPY src/ ./src/
 # Create logs directory (config may write here)
 RUN mkdir -p logs && chmod 755 logs
 
-# Run as non-root user
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
-
 EXPOSE 8001 9001
 
 # Default: run facilitator. Override CMD for custom entry.
