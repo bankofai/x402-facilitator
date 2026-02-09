@@ -9,9 +9,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Build deps for wheels (tronpy/eth-account 等可能需编译)
+# Build deps: gcc for wheels, git for pip install from git URLs
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency file first for better layer caching
