@@ -61,7 +61,7 @@ facilitator:
     bsc:testnet:
       fee_to_address: ""
       base_fee:
-        DHLU: 100
+        USDC: 100
       private_key: ""
     bsc:mainnet:
       fee_to_address: ""
