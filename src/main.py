@@ -94,10 +94,7 @@ async def lifespan(app: FastAPI):
         fee_to = config.get_fee_to_address(network)
         base_fee = config.get_base_fee(network)
         if is_tron_network(network):
-            facilitator_signer = TronFacilitatorSigner.from_private_key(
-                private_key=private_key,
-                network=to_internal_network[network],
-            )
+            facilitator_signer = TronFacilitatorSigner.from_private_key(private_key=private_key)
             facilitator_mechanism = ExactPermitTronFacilitatorMechanism(
                 facilitator_signer,
                 fee_to=fee_to,
@@ -109,29 +106,8 @@ async def lifespan(app: FastAPI):
             )
             x402_facilitator.register([network], facilitator_mechanism)
             logger.info(f"Facilitator registered for {network}")
-        elif is_bsc_network(network):
-            facilitator_signer = EvmFacilitatorSigner.from_private_key(
-                private_key=private_key,
-                network=to_internal_network[network],
-            )
-            facilitator_mechanism = ExactPermitEvmFacilitatorMechanism(
-                facilitator_signer,
-                fee_to=fee_to,
-                base_fee=base_fee,
-            )
-            x402_facilitator.register([network], facilitator_mechanism)
-
-            facilitator_mechanism = ExactEvmFacilitatorMechanism(
-                facilitator_signer,
-            )
-            x402_facilitator.register([network], facilitator_mechanism)
-
-            logger.info(f"Facilitator registered for {network}")
-        elif is_eth_network(network):
-            facilitator_signer = EvmFacilitatorSigner.from_private_key(
-                private_key=private_key,
-                network=to_internal_network[network],
-            )
+        elif is_bsc_network(network) or is_eth_network(network):
+            facilitator_signer = EvmFacilitatorSigner.from_private_key(private_key=private_key)
             facilitator_mechanism = ExactPermitEvmFacilitatorMechanism(
                 facilitator_signer,
                 fee_to=fee_to,
