@@ -100,11 +100,11 @@ async def lifespan(app: FastAPI):
                 fee_to=fee_to,
                 base_fee=base_fee,
             )
-            x402_facilitator.register([network], facilitator_mechanism)
+            x402_facilitator.register([to_internal_network[network]], facilitator_mechanism)
             facilitator_mechanism = ExactTronFacilitatorMechanism(
                 facilitator_signer,
             )
-            x402_facilitator.register([network], facilitator_mechanism)
+            x402_facilitator.register([to_internal_network[network]], facilitator_mechanism)
             logger.info(f"Facilitator registered for {network}")
         elif is_bsc_network(network) or is_eth_network(network):
             facilitator_signer = EvmFacilitatorSigner.from_private_key(private_key=private_key)
@@ -113,12 +113,12 @@ async def lifespan(app: FastAPI):
                 fee_to=fee_to,
                 base_fee=base_fee,
             )
-            x402_facilitator.register([network], facilitator_mechanism)
+            x402_facilitator.register([to_internal_network[network]], facilitator_mechanism)
 
             facilitator_mechanism = ExactEvmFacilitatorMechanism(
                 facilitator_signer,
             )
-            x402_facilitator.register([network], facilitator_mechanism)
+            x402_facilitator.register([to_internal_network[network]], facilitator_mechanism)
 
             logger.info(f"Facilitator registered for {network}")
         else:
